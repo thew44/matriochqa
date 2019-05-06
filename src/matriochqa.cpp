@@ -15,6 +15,7 @@ Matriochqa::Matriochqa()
     m_mdgen.setConfig(m_mqaconf);
     m_mdgen.setInstancesCatalog(&m_current_emulators);       
     m_cmdserver.setConfig(m_mqaconf);
+    m_cmdserver.start_server();
 }
 
 void Matriochqa::loadconfig()

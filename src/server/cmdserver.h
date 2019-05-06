@@ -2,20 +2,28 @@
 #define CMDSERVER_H
 
 #include <QObject>
+#include <QQueue>
+#include <QPair>
+#include <QMutex>
 #include "model/types.h"
+#include "utils/protected.h"
 
 class QHttpServer;
+
+enum SrvCommand_t {
+    srv_command_stop,
+    srv_command_start,
+    srv_command_restart,
+    srv_command_unknown
+};
+
+
+typedef Protected<QQueue<QPair<int, SrvCommand_t>>> CommandQueue_t;
 
 class CmdServer : public QObject
 {
     Q_OBJECT
 public:
-    enum SrvCommand_t {
-        srv_command_stop,
-        srv_command_start,
-        srv_command_restart
-    };
-
 
     explicit CmdServer(QObject *parent = nullptr);
     virtual ~CmdServer();
@@ -26,6 +34,9 @@ public:
 
     void start_server();
 
+private slots:
+    void dequeue_commands();
+
 signals:
     void start_instance(int id);
     void stop_instance(int id);
@@ -33,7 +44,8 @@ signals:
 
 private:
     ptr_MqaConfig m_config;
-    QHttpServer* m_server = nullptr;
+    QHttpServer* m_server = nullptr;    
+    static CommandQueue_t m_CommandQueue;
 };
 
 #endif // CMDSERVER_H

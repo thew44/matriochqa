@@ -41,9 +41,9 @@ void MdGenerator::rebuild_index_page()
             out << str_status(inst->status());
             out << "|" << (inst->has_configuration_pending()? "UPDATE_PENDING" : "UP_TO_DATE");
             out << "|";
-            out << "[Stop](" << CmdServer::BuildCommand(m_config, inst->get_id(), CmdServer::srv_command_stop) << ") - ";
-            out << "[Start](" << CmdServer::BuildCommand(m_config, inst->get_id(), CmdServer::srv_command_start) << ") - ";
-            out << "[Restart](" << CmdServer::BuildCommand(m_config, inst->get_id(), CmdServer::srv_command_restart) << ")";
+            out << "[Stop](" << CmdServer::BuildCommand(m_config, inst->get_id(), srv_command_stop) << ") - ";
+            out << "[Start](" << CmdServer::BuildCommand(m_config, inst->get_id(), srv_command_start) << ") - ";
+            out << "[Restart](" << CmdServer::BuildCommand(m_config, inst->get_id(), srv_command_restart) << ")";
             out << "|" << endl;
 
         }
@@ -99,9 +99,9 @@ void MdGenerator::rebuild_instance_page(EmuInstance* i_instance)
         out << endl;
 
         out << "**Commands:**" << endl << endl;
-        out << "[Stop](" << CmdServer::BuildCommand(m_config, i_instance->get_id(), CmdServer::srv_command_stop) << ")"  << endl;
-        out << "[Start](" << CmdServer::BuildCommand(m_config, i_instance->get_id(), CmdServer::srv_command_start) << ")"  << endl;
-        out << "[Restart](" << CmdServer::BuildCommand(m_config, i_instance->get_id(), CmdServer::srv_command_restart) << endl;
+        out << "[Stop](" << CmdServer::BuildCommand(m_config, i_instance->get_id(), srv_command_stop) << ")"  << endl;
+        out << "[Start](" << CmdServer::BuildCommand(m_config, i_instance->get_id(), srv_command_start) << ")"  << endl;
+        out << "[Restart](" << CmdServer::BuildCommand(m_config, i_instance->get_id(), srv_command_restart) << endl;
         out << endl;
 
         out << "**Configuration:**"<< endl << endl;

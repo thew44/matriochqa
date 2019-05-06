@@ -42,15 +42,16 @@ HEADERS += \
     src/model/mqaconfig.h \
     src/server/mdgenerator.h \
     src/utils/hash.h \
-    src/server/cmdserver.h
+    src/server/cmdserver.h \
+    src/utils/protected.h
 
 # For server, necessary to send order with the html panel
-#QT += network
-#DEFINES += ENABLE_HTTP_CMDSERVER
+QT += network
+DEFINES += ENABLE_HTTP_CMDSERVER
 
-#win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../qhttpserver_dist/lib/ -lQt5HttpServer
-#else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../qhttpserver_dist/lib/ -lQt5HttpServerd
-#else:unix:!macx: LIBS += -L$$PWD/../qhttpserver_dist/lib/ -lQt5HttpServer
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../qhttpserver_dist/lib/ -lQt5HttpServer
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../qhttpserver_dist/lib/ -lQt5HttpServerd
+else:unix:!macx: LIBS += -L$$PWD/../qhttpserver_dist/lib/ -lQt5HttpServer
 
-#INCLUDEPATH += $$PWD/../qhttpserver_dist/include
-#DEPENDPATH += $$PWD/../qhttpserver_dist/include
+INCLUDEPATH += $$PWD/../qhttpserver_dist/include
+DEPENDPATH += $$PWD/../qhttpserver_dist/include
