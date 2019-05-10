@@ -16,7 +16,7 @@ class Matriochqa : public QObject
 {
     Q_OBJECT
 public:
-    Matriochqa();
+    Matriochqa(const QString &i_cfgfile);
 
     void loadconfig();
 
@@ -26,6 +26,9 @@ public:
 
 public slots:
     void config_updated();
+    void start_instance(int id);
+    void stop_instance(int id);
+    void restart_instance(int id);
 
 private slots:
     //void suspect_config_updated();

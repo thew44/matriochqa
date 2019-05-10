@@ -19,6 +19,7 @@ private:
 };
 
 static void mqaLog(const QString& i_msg) { Logger::Log(i_msg); }
+static void mqaErr(const QString& i_msg) { Logger::Log("ERROR: " + i_msg); }
 static void mqaWarn(const QString& i_msg) { Logger::Log("WARN: " + i_msg); }
 
 #endif // LOGGER_H

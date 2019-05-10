@@ -1,0 +1,4 @@
+id;order;title;cdrom;hda;hda_copy;hdb;hdb_copy;memory;network type;ports/interface
+1;;Linux Test VM 1;c:\mqa\minilinux.iso;c:\mqa\drive.qcow;true;;;1G;;
+2;;Linux Test VM 2;c:\mqa\minilinux.iso;;;;;512M;;
+3;;Empty VM;;c:\mqa\drive.qcow;true;;;512M;;

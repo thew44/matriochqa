@@ -16,5 +16,33 @@ qmake matriochqa.pro
 make
 ```
 
+## Configure
+Typical configuration file:
+```
+[%General]
+base_vm_dir=C:/mqa/tmp
+instance_config=C:/mqa/etc/vm.csv
+new_instances_start_immediatly=true
+
+[qemu]
+base_qemu_dir=C:/Program Files/qemu
+exec\x86_64=qemu-system-x86_64.exe
+
+[markdown]
+hugo_content_dir=C:/mqa/hugo/content
+hugo_port=1313
+mq_root=/
+mq_instances_path=/docs/
+content_console_depth=100
+content_logbook_depth=30
+
+[command_server]
+address=127.0.0.1
+port=4455
+```
+Software will look for `matriochqa.ini` in current directory.
+Path to configuration file can be overloaded with command line option `-c <path_to_ini>`.
+
 ## Status
+
 **NOT FUNCTIONAL, WORKING ON IT !**

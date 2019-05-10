@@ -2,6 +2,7 @@
 #include "model/mqaconfig.h"
 #include "utils/mqaexception.h"
 #include "utils/logger.h"
+#include "server/mdgenerator.h"
 
 #ifdef ENABLE_HTTP_CMDSERVER
 # include <QTcpSocket>
@@ -9,13 +10,15 @@
 # include <QtHttpServer/QHttpServer>
 #endif
 
-CommandQueue_t CmdServer::m_CommandQueue = CommandQueue_t();
+ProtCommandQueue_t CmdServer::m_CommandQueue = ProtCommandQueue_t();
 
 CmdServer::CmdServer(QObject *parent) : QObject(parent)
 {
 #ifdef ENABLE_HTTP_CMDSERVER
     m_server = new QHttpServer();    
-#endif
+#endif    
+    m_dequeue_timer.setSingleShot(false);
+    connect(&m_dequeue_timer, &QTimer::timeout, this, &CmdServer::dequeue_commands);
 }
 
 CmdServer::~CmdServer()
@@ -23,7 +26,7 @@ CmdServer::~CmdServer()
     if (m_server) delete m_server;
 }
 
-QString CmdServer::BuildCommand(ptr_MqaConfig& i_config, int id, SrvCommand_t cmd)
+QString CmdServer::BuildCommand(ptr_MqaConfig& i_config, int id, SrvCommand_t cmd, QString from)
 {
     QString cmd_api;
     switch(cmd)
@@ -33,18 +36,19 @@ QString CmdServer::BuildCommand(ptr_MqaConfig& i_config, int id, SrvCommand_t cm
         case srv_command_restart: cmd_api = "restart"; break;
     }
 
-    return QString("http://%1:%2/%3/%4")
+    return QString("http://%1:%2/emu/%3/%4%5")
             .arg(i_config->m_server_address)
             .arg(i_config->m_server_port)
             .arg(id)
-            .arg(cmd_api);
+            .arg(cmd_api)
+            .arg(from.isEmpty() ? "": QString("/%1").arg(QString::fromLocal8Bit(from.toLocal8Bit().toBase64())));
 }
 
 void CmdServer::start_server()
 {
 #ifdef ENABLE_HTTP_CMDSERVER
     // Create commands by route
-    m_server->route("/emu/<arg>/<arg>", [] (qint32 id, QString cmd, const QHttpServerRequest &request) {
+    m_server->route("/emu/<arg>/<arg>/<arg>", [] (qint32 id, QString cmd, QString from, const QHttpServerRequest &request) {
         // Not reliable but due to lack of documentation of QHttpServer, I do not know
         // any other way for the moment
         QString sender_ip = request.headers()[QStringLiteral("Remote_Addr")].toString();
@@ -73,7 +77,15 @@ void CmdServer::start_server()
         m_CommandQueue.acquire().enqueue(QPair<int, SrvCommand_t>(id, parse_cmd));
         m_CommandQueue.release();
 
-        return QString("OK");
+        // Location is sent by the front
+        // Horrible trick but I cannot find another way with this buggy server
+        QString from_location = QByteArray::fromBase64(from.toLocal8Bit()).data();
+        // Use meta refresh as QHttpServerResponder::StatusCode::MovedPermanently does not seems to work at the moment
+        mqaLog("FROM: " + from_location);
+        //return QString("<html><meta http-equiv=\"refresh\" content=\"0; url=%1\"></html>").arg(from_location);
+        return QString("<html><head>"
+                       "<script>window.addEvent('domready', function() { history.go(-1); });</script>"
+                       "</head></html>");
     });
 
     // Start listining
@@ -101,10 +113,29 @@ void CmdServer::start_server()
 #else
     mqaWarn("Commands through web services are disabled - no support compiled");
 #endif
+    m_dequeue_timer.start(100);
 }
 
 void CmdServer::dequeue_commands()
 {
-    mqaLog("PROCESSING");
+    // Do something only if we can lock the queue... otherwise
+    // just wait for next timer timeout
+    CommandQueue_t* queue = m_CommandQueue.try_acquire();
+    if (queue)
+    {
+        while(!queue->empty())
+        {
+            QPair<int, SrvCommand_t> order = queue->dequeue();
+            switch (order.second)
+            {
+            case srv_command_start: emit start_instance(order.first); break;
+            case srv_command_stop: emit stop_instance(order.first); break;
+            case srv_command_restart: emit restart_instance(order.first); break;
+            }
+            // For unknown command, silent fail
+        }
+        m_CommandQueue.release();
+    }
+
 }
 

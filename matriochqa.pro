@@ -2,6 +2,9 @@ QT -= gui
 
 CONFIG += c++11 console
 CONFIG -= app_bundle
+# Comment to disable http commands server
+# This will kill dependency to QHttpServer and QtNetwork
+CONFIG += mqa_command_server
 
 # The following define makes your compiler emit warnings if you use
 # any Qt feature that has been marked deprecated (the exact warnings
@@ -23,7 +26,8 @@ SOURCES += \
     src/model/emuinstance.cpp \
     src/server/mdgenerator.cpp \
     src/utils/hash.cpp \
-    src/server/cmdserver.cpp
+    src/server/cmdserver.cpp \
+    src/model/mqaconfig.cpp
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -46,6 +50,7 @@ HEADERS += \
     src/utils/protected.h
 
 # For server, necessary to send order with the html panel
+mqa_command_server {
 QT += network
 DEFINES += ENABLE_HTTP_CMDSERVER
 
@@ -55,3 +60,4 @@ else:unix:!macx: LIBS += -L$$PWD/../qhttpserver_dist/lib/ -lQt5HttpServer
 
 INCLUDEPATH += $$PWD/../qhttpserver_dist/include
 DEPENDPATH += $$PWD/../qhttpserver_dist/include
+}

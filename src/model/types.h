@@ -25,11 +25,12 @@ enum e_emu_status
 {
     ev_emu_new = 0,
     ev_emu_stopped,
+    ev_emu_stopping,
     ev_emu_started,
     ev_emu_error
 };
 
-class MqaConfig;
+struct MqaConfig;
 typedef QSharedPointer<MqaConfig> ptr_MqaConfig;
 
 #endif

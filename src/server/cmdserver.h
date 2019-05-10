@@ -5,6 +5,7 @@
 #include <QQueue>
 #include <QPair>
 #include <QMutex>
+#include <QTimer>
 #include "model/types.h"
 #include "utils/protected.h"
 
@@ -17,8 +18,8 @@ enum SrvCommand_t {
     srv_command_unknown
 };
 
-
-typedef Protected<QQueue<QPair<int, SrvCommand_t>>> CommandQueue_t;
+typedef QQueue<QPair<int, SrvCommand_t>> CommandQueue_t;
+typedef Protected<CommandQueue_t> ProtCommandQueue_t;
 
 class CmdServer : public QObject
 {
@@ -30,7 +31,7 @@ public:
 
     void setConfig(ptr_MqaConfig i_config) { m_config = i_config; }
 
-    static QString BuildCommand(ptr_MqaConfig &i_config, int id, SrvCommand_t cmd);
+    static QString BuildCommand(ptr_MqaConfig &i_config, int id, SrvCommand_t cmd, QString from);
 
     void start_server();
 
@@ -45,7 +46,8 @@ signals:
 private:
     ptr_MqaConfig m_config;
     QHttpServer* m_server = nullptr;    
-    static CommandQueue_t m_CommandQueue;
+    QTimer m_dequeue_timer;
+    static ProtCommandQueue_t m_CommandQueue;
 };
 
 #endif // CMDSERVER_H

@@ -15,7 +15,7 @@ void MdGenerator::rebuild_index_page()
     if (m_config.isNull()) return;
 
     // Rebuild _index.md
-    QFile outputFile(m_config->m_markdown_dir.path() + "/" + FILE_MD_INDEX);
+    QFile outputFile(m_config->m_markdown_dir.path() + m_config->m_markdown_emuroot + FILE_MD_INDEX);
     if (outputFile.open(QIODevice::WriteOnly))
     {
         QTextStream out(&outputFile);
@@ -41,9 +41,11 @@ void MdGenerator::rebuild_index_page()
             out << str_status(inst->status());
             out << "|" << (inst->has_configuration_pending()? "UPDATE_PENDING" : "UP_TO_DATE");
             out << "|";
-            out << "[Stop](" << CmdServer::BuildCommand(m_config, inst->get_id(), srv_command_stop) << ") - ";
-            out << "[Start](" << CmdServer::BuildCommand(m_config, inst->get_id(), srv_command_start) << ") - ";
-            out << "[Restart](" << CmdServer::BuildCommand(m_config, inst->get_id(), srv_command_restart) << ")";
+#ifdef ENABLE_HTTP_CMDSERVER
+            out << "[Stop](" << CmdServer::BuildCommand(m_config, inst->get_id(), srv_command_stop, m_config->m_markdown_emuroot) << ") - ";
+            out << "[Start](" << CmdServer::BuildCommand(m_config, inst->get_id(), srv_command_start, m_config->m_markdown_emuroot) << ") - ";
+            out << "[Restart](" << CmdServer::BuildCommand(m_config, inst->get_id(), srv_command_restart, m_config->m_markdown_emuroot) << ")";
+#endif
             out << "|" << endl;
 
         }
@@ -91,18 +93,23 @@ void MdGenerator::rebuild_instance_page(EmuInstance* i_instance)
         out << "Instance with ID " << i_instance->get_id() << endl;
         out << endl;
         out << "**Status: " << str_status(i_instance->status()) << "**" << endl << endl;
-        out << "QEMU backend PID: " << i_instance->getEmuPID() << endl;
+        if (i_instance->status() == ev_emu_started)
+        {
+            out << "QEMU backend PID: " << i_instance->getEmuPID() << endl;
+        }
         if (!i_instance->getNextConfig().is_empty())
         {
             out << endl << "<span style='color:red'>*Updated configuration not loaded - restart pending...*</span>" << endl;
         }
         out << endl;
 
+#ifdef ENABLE_HTTP_CMDSERVER
         out << "**Commands:**" << endl << endl;
-        out << "[Stop](" << CmdServer::BuildCommand(m_config, i_instance->get_id(), srv_command_stop) << ")"  << endl;
-        out << "[Start](" << CmdServer::BuildCommand(m_config, i_instance->get_id(), srv_command_start) << ")"  << endl;
-        out << "[Restart](" << CmdServer::BuildCommand(m_config, i_instance->get_id(), srv_command_restart) << endl;
+        out << "[Stop](" << CmdServer::BuildCommand(m_config, i_instance->get_id(), srv_command_stop, m_config->m_markdown_emupagedir + get_emu_page(i_instance->get_id())) << ")"  << endl;
+        out << "[Start](" << CmdServer::BuildCommand(m_config, i_instance->get_id(), srv_command_start, m_config->m_markdown_emupagedir + get_emu_page(i_instance->get_id())) << ")"  << endl;
+        out << "[Restart](" << CmdServer::BuildCommand(m_config, i_instance->get_id(), srv_command_restart, m_config->m_markdown_emupagedir + get_emu_page(i_instance->get_id())) << ")" << endl;
         out << endl;
+#endif
 
         out << "**Configuration:**"<< endl << endl;
         out << i_instance->getCurrentConfig().serializeToMdHeaders() << endl;
@@ -141,6 +148,7 @@ QString MdGenerator::str_status(e_emu_status i_st)
     {
     case ev_emu_new: return QString("NEW"); break;
     case ev_emu_stopped: return QString("STOPPED"); break;
+    case ev_emu_stopping: return QString("STOPPING"); break;
     case ev_emu_started: return QString("STARTED"); break;
     case ev_emu_error: return QString("ERROR"); break;
     }

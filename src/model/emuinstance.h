@@ -4,12 +4,20 @@
 #include <QObject>
 #include <QProcess>
 #include <QLinkedList>
+#include <QDateTime>
 #include "emuconfig.h"
 #include "types.h"
 #include "mqaconfig.h"
 
 class EmuInstance : public QObject
 {
+    enum ShouldBeStatus_t
+    {
+        st_new,
+        st_running,
+        st_stopped
+    };
+
     Q_OBJECT
 public:
     explicit EmuInstance(ptr_MqaConfig i_mqaconf, const EmuConfig& i_config);
@@ -28,6 +36,7 @@ public slots:
     const EmuConfig& getCurrentConfig() const { return m_current_config;}
     const EmuConfig& getNextConfig() const { return m_next_config;}
     const QLinkedList<QString>& getConsole() const { return m_console; }
+    const QLinkedList<QPair<QDateTime, QString>>& getLogbook() const { return m_logbook; }
     const QString getEmuPID() const;
 
 private slots:
@@ -42,12 +51,14 @@ signals:
 private:
     QString prepare_drive(const QString& i_source, bool i_copy);
     void add_console_bytes(const QByteArray& i_data);
+    void emuLog(const QString& i_msg);
     EmuInstance() {}
 
-    bool m_status_new = true;
+    ShouldBeStatus_t m_expected_status = st_new;
 
     QLinkedList<QString> m_console;
     QString m_console_currline;
+    QLinkedList<QPair<QDateTime, QString>> m_logbook;
 
     ptr_MqaConfig m_mqaconf;
     EmuConfig m_current_config;

@@ -15,6 +15,7 @@ public:
 
     void setConfig(ptr_MqaConfig i_config) { m_config = i_config; }
     void setInstancesCatalog(QMap<int, EmuInstance*>* i_emu_instances) { m_current_emulators = i_emu_instances; }
+    static QString get_emu_page(int id);
 
 signals:
 
@@ -22,7 +23,6 @@ private:
     void rebuild_index_page();
     void rebuild_instance_page(EmuInstance* i_instance);
     QString str_status(e_emu_status i_st);
-    QString get_emu_page(int id);
 
 public slots:
     void emu_instance_changed(int id);

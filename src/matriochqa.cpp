@@ -9,22 +9,29 @@
 #include <QTextStream>
 #include "utils/hash.h"
 
-Matriochqa::Matriochqa()
+Matriochqa::Matriochqa(const QString& i_cfgfile)
 {
-    m_mqaconf = ptr_MqaConfig(new MqaConfig());
+    m_mqaconf = ptr_MqaConfig(new MqaConfig(i_cfgfile));
+
+    m_mqaconf->read();
+    m_mqaconf->check();
+    mqaLog(m_mqaconf->toMarkdown());
+
     m_mdgen.setConfig(m_mqaconf);
     m_mdgen.setInstancesCatalog(&m_current_emulators);       
+
     m_cmdserver.setConfig(m_mqaconf);
     m_cmdserver.start_server();
+    connect(&m_cmdserver, &CmdServer::start_instance, this, &Matriochqa::start_instance);
+    connect(&m_cmdserver, &CmdServer::stop_instance, this, &Matriochqa::stop_instance);
+    connect(&m_cmdserver, &CmdServer::restart_instance, this, &Matriochqa::restart_instance);
 }
 
 void Matriochqa::loadconfig()
 {
     QString aCfgFile = m_mqaconf->m_mqa_vm_conf.canonicalFilePath();
-    mqaLog("Load configuration file " + aCfgFile);
+    mqaLog(QString("Load configuration file %1 (%2 bytes)").arg(aCfgFile).arg(m_mqaconf->m_mqa_vm_conf.size()));
     m_next_config.clear();
-
-    mqaLog(QString("Filesize= %1").arg(m_mqaconf->m_mqa_vm_conf.size()));
 
     // Parse configuration
     QFile inputFile(aCfgFile);
@@ -60,15 +67,13 @@ void Matriochqa::loadconfig()
     }
     else
     {
+        m_next_config.clear();
         throw MqaException(QString("Cannot open and read file " + aCfgFile));
     }
 }
 
 void Matriochqa::prepare_all()
 {
-    mqaLog("ENTERING prepare_all");
-    mqaLog(QString("m_next_config size=%1    m_current_emulators size=%2").arg(m_next_config.size()).arg(m_current_emulators.size()));
-
     QList<int> emu_to_remove;
     // First, loop on all existing emulator instances to check whether some
     // were removed from the new configuration
@@ -87,8 +92,6 @@ void Matriochqa::prepare_all()
         delete m_current_emulators[id];
         m_current_emulators.remove(id);
     }
-
-    mqaLog(QString("OUT OF prepare_all: %1").arg(m_current_emulators.size()));
 
     // Now loop on the ID in the new configuration
     // and update configuration in instances
@@ -147,9 +150,6 @@ void Matriochqa::config_updated()
             // Load data from file
             loadconfig();
 
-            mqaLog("AFTER loadconfig");
-            mqaLog(QString("m_next_config size=%1    m_current_emulators size=%2").arg(m_next_config.size()).arg(m_current_emulators.size()));
-
             // Prepare all VM instances for new conf
             prepare_all();
 
@@ -165,7 +165,48 @@ void Matriochqa::config_updated()
     }
     catch(const MqaException& ex)
     {
-        mqaLog("ERROR: Failed to reload configuration: " + ex.msg());
+        mqaErr("Failed to reload configuration: " + ex.msg());
+        // Do not forward error - it is still possible to load a
+        // new valid configuration
+    }
+}
+
+void Matriochqa::start_instance(int id)
+{
+    try
+    {
+        if (!m_current_emulators.contains(id)) throw MqaException(QString("No instance with id %1").arg(id));
+        m_current_emulators[id]->start();
+    }
+    catch (const MqaException& ex)
+    {
+        mqaErr(QString("Request to start instance %1 failed: %2").arg(id).arg(ex.msg()));
+    }
+}
+
+void Matriochqa::stop_instance(int id)
+{
+    try
+    {
+        if (!m_current_emulators.contains(id)) throw MqaException(QString("No instance with id %1").arg(id));
+        m_current_emulators[id]->stop();
+    }
+    catch (const MqaException& ex)
+    {
+        mqaErr(QString("Request to stop instance %1 failed: %2").arg(id).arg(ex.msg()));
+    }
+}
+
+void Matriochqa::restart_instance(int id)
+{
+    try
+    {
+        if (!m_current_emulators.contains(id)) throw MqaException(QString("No instance with id %1").arg(id));
+        //TODO
+    }
+    catch (const MqaException& ex)
+    {
+        mqaErr(QString("Request to restart instance %1 failed: %2").arg(id).arg(ex.msg()));
     }
 }
 

@@ -22,6 +22,18 @@ public:
         return m_obj;
     }
 
+    T* try_acquire (void)
+    {
+        if (m_mtx.tryLock())
+        {
+            return &m_obj;
+        }
+        else
+        {
+            return nullptr;
+        }
+    }
+
     void release()
     {
         m_mtx.unlock();
