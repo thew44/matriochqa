@@ -3,8 +3,21 @@
 
 #include <QSharedPointer>
 
-#define POS_ID 0
-#define POS_ORDER POS_ID+1
+#define CFG_ID "id"
+#define CFG_TITLE "title"
+#define CFG_ARCH "architecture"
+#define CFG_CDROM "cdrom"
+#define CFG_HDA "hda"
+#define CFG_HDACPY "hda copy"
+#define CFG_HDB "hdb"
+#define CFG_HDBCPY "hdb copy"
+#define CFG_MEM "memory"
+#define CFG_NETTYPE "network type"
+#define CFG_NETFWD "forward"
+#define CFG_NETBASE "base port"
+#define CFG_OUT "output"
+#define CFG_OPTIONS "options"
+
 #define POS_TITLE POS_ORDER+1
 #define POS_CDROM_PATH POS_TITLE+1
 #define POS_HDA_PATH POS_CDROM_PATH+1

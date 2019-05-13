@@ -3,6 +3,7 @@
 #include <QStringList>
 #include <functional>   // std::equal_to
 #include "types.h"
+#include "model/csvparser.h"
 #include "utils/mqaexception.h"
 #include <QStringBuilder>
 
@@ -11,38 +12,38 @@ EmuConfig::EmuConfig()
 
 }
 
-bool EmuConfig::is_updated(const QString &i_serialized) const
+bool EmuConfig::deserialize(csvreader_t &i_reader)
 {
-    EmuConfig other_inst;
-    other_inst.deserialize(i_serialized);
+    std::string title, arch, cdrom, hda, hdacpy, hdb, hdbcpy, mem, nettype, netfwd, netbase, out, options;
+    // Pull next row in configuration file
+    bool not_eof = i_reader.read_row(m_id, title, arch, cdrom, hda, hdacpy, hdb, hdbcpy, mem, nettype, netfwd, netbase, out, options);
+    // End of file reached ?
+    if (not_eof == false) return !not_eof;
 
-    return this->operator==(other_inst);
-}
+    // Perform some checks & copies to QString
+    if (m_id <= 0)
+        throw MqaException(QString("Syntax error at line %1: wrong id '%2'. Must be a positive integer.").arg(i_reader.get_file_line()).arg(m_id));
 
-void EmuConfig::deserialize(const QString &i_serialized)
-{
-    QStringList args = i_serialized.split(";");
-    if (args.size() < POS_MAXSIZE) throw MqaException(QString("Syntax error in string '%1': not enough element.").arg(i_serialized));
-    bool ok = true;
+    m_title = QString::fromStdString(title);
+    if (m_title.isEmpty())
+        throw MqaException(QString("Syntax error at line %1: Title cannot be empty.").arg(i_reader.get_file_line()));
 
-    m_id = args[POS_ID].toInt(&ok);
-    if (!ok || m_id <= 0) throw MqaException(QString("Syntax error in string '%1': wrong id '%2'. Must be a positive integer.").arg(i_serialized).arg(args[POS_ID]));
+    m_cdrom = QString::fromStdString(cdrom);
 
-    m_order = args[POS_ORDER].toInt(&ok);
-    if (!ok) m_order = DEF_UNDEFINED;
+    m_hda = QString::fromStdString(hda);
+    if (m_hda.isEmpty() && m_cdrom.isEmpty())
+        throw MqaException(QString("Syntax error at line %1: Path to hda and cdrom cannot be both empty.").arg(i_reader.get_file_line()));
+    m_hda_copy = (hdacpy == STR_TRUE ? true : false);
 
-    m_title = args[POS_TITLE];
+    m_hdb = QString::fromStdString(hdb);
+    m_hdb_copy = (hdbcpy == STR_TRUE ? true : false);
 
-    m_cdrom = args[POS_CDROM_PATH];
+    m_mem = QString::fromStdString(mem);
+    m_mem = (m_mem.isEmpty() ? "2G" : m_mem);
+    if (m_mem.right(1) != "M" && m_mem.right(1) != "G" && m_mem.right(1) != "K")
+        throw MqaException(QString("Syntax error at line %1: Memory quantity '%2' is invalid. Must be suffixed with K, M or G.").arg(i_reader.get_file_line()).arg(m_mem));
 
-    m_hda = args[POS_HDA_PATH];
-    if (m_hda.isEmpty() && m_cdrom.isEmpty()) throw MqaException(QString("Syntax error in string '%1': Path to hda and cdrom cannot be both empty."));
-    m_hda_copy = (args[POS_HDA_COPY] == STR_TRUE ? true : false);
-
-    m_hdb = args[POS_HDB_PATH];
-    m_hdb_copy = (args[POS_HDB_COPY] == STR_TRUE ? true : false);
-
-    m_mem = (args[POS_MEM].isEmpty() ? "2G" : args[POS_MEM]);
+    return !not_eof;
 }
 
 QString EmuConfig::toLogTitle() const

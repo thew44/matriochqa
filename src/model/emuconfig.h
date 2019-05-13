@@ -2,6 +2,7 @@
 #define EMUCONFIG_H
 
 #include <QString>
+#include "model/csvparser.h"
 
 class EmuInstance;
 
@@ -32,9 +33,10 @@ public:
         return !(this->operator==(lhs));
     }
 
-    bool is_updated(const QString& i_serialized) const;
-
-    void deserialize(const QString& i_serialized);
+    /*
+     * @return true when EOF is reached. Object is then not modified.
+     */
+    bool deserialize(csvreader_t& i_reader);
 
     QString toLogTitle() const;
 

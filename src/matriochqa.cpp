@@ -3,11 +3,13 @@
 #include "model/emuconfig.h"
 #include "utils/logger.h"
 #include "utils/mqaexception.h"
+#include <exception>
 
 #include <QThread>
 #include <QFile>
 #include <QTextStream>
 #include "utils/hash.h"
+#include "model/csvparser.h"
 
 Matriochqa::Matriochqa(const QString& i_cfgfile)
 {
@@ -15,7 +17,6 @@ Matriochqa::Matriochqa(const QString& i_cfgfile)
 
     m_mqaconf->read();
     m_mqaconf->check();
-    mqaLog(m_mqaconf->toMarkdown());
 
     m_mdgen.setConfig(m_mqaconf);
     m_mdgen.setInstancesCatalog(&m_current_emulators);       
@@ -33,6 +34,51 @@ void Matriochqa::loadconfig()
     mqaLog(QString("Load configuration file %1 (%2 bytes)").arg(aCfgFile).arg(m_mqaconf->m_mqa_vm_conf.size()));
     m_next_config.clear();
 
+
+    try
+    {
+    csvreader_t input_csv(aCfgFile.toStdString());
+    input_csv.read_header(io::ignore_extra_column | io::ignore_missing_column,  CFG_ID,
+                                                                                CFG_TITLE,
+                                                                                CFG_ARCH,
+                                                                                CFG_CDROM,
+                                                                                CFG_HDA,
+                                                                                CFG_HDACPY,
+                                                                                CFG_HDB,
+                                                                                CFG_HDBCPY,
+                                                                                CFG_MEM,
+                                                                                CFG_NETTYPE,
+                                                                                CFG_NETFWD,
+                                                                                CFG_NETBASE,
+                                                                                CFG_OUT,
+                                                                                CFG_OPTIONS);
+
+
+    bool eof = false;
+    while (!eof)
+    {
+        EmuConfig conf;
+        eof = conf.deserialize(input_csv);
+        if (eof) break;
+        // Verify that there isn't already another line with the same ID
+        if (m_next_config.contains(conf.get_id()))
+        {
+            throw MqaException(QString("Image with ID %1 defined twice").arg(conf.get_id()));
+        }
+
+        m_next_config.insert(conf.get_id(), conf);
+        mqaLog("Read virtual machine configuration: " + conf.toLogTitle());
+    }
+    // Do not forget to update hash - not completely bullet proof in case someone
+    // lock the file in between... but should work in most++ cases
+    m_vm_conf_hash = Hash::SHA1(aCfgFile);
+    }
+    catch(const std::exception& ex)
+    {
+        m_next_config.clear();
+        throw MqaException(QString("Cannot open and read file %1: %2").arg(aCfgFile).arg(ex.what()));
+    }
+    /*
     // Parse configuration
     QFile inputFile(aCfgFile);
     bool title_passed = false;
@@ -70,6 +116,7 @@ void Matriochqa::loadconfig()
         m_next_config.clear();
         throw MqaException(QString("Cannot open and read file " + aCfgFile));
     }
+    */
 }
 
 void Matriochqa::prepare_all()
@@ -202,7 +249,8 @@ void Matriochqa::restart_instance(int id)
     try
     {
         if (!m_current_emulators.contains(id)) throw MqaException(QString("No instance with id %1").arg(id));
-        //TODO
+        m_current_emulators[id]->stop();
+        m_current_emulators[id]->start();
     }
     catch (const MqaException& ex)
     {

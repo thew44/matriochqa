@@ -37,6 +37,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 INCLUDEPATH += src
 
 HEADERS += \
+    3rdparty/fast-cpp-csv-parser/csv.h \
     src/model/types.h \
     src/utils/mqaexception.h \
     src/matriochqa.h \
@@ -47,7 +48,8 @@ HEADERS += \
     src/server/mdgenerator.h \
     src/utils/hash.h \
     src/server/cmdserver.h \
-    src/utils/protected.h
+    src/utils/protected.h \
+    src/model/csvparser.h
 
 # For server, necessary to send order with the html panel
 mqa_command_server {
@@ -61,3 +63,6 @@ else:unix:!macx: LIBS += -L$$PWD/../qhttpserver_dist/lib/ -lQt5HttpServer
 INCLUDEPATH += $$PWD/../qhttpserver_dist/include
 DEPENDPATH += $$PWD/../qhttpserver_dist/include
 }
+
+DISTFILES += \
+    README.md
