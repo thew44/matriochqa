@@ -13,7 +13,7 @@ struct MqaConfig
     unsigned int m_logbook_depth = 30;
     QDir m_base_vm_dir = QDir("C:/temp");
     QDir m_base_qemu_dir = QDir("C:/Program Files/qemu");    
-    QHash<QString, QString> m_qemu_exec;
+    QHash<QString, machine_t> m_qemu_machines;
     QFileInfo m_mqa_vm_conf = QFileInfo("C:/mqa/vm.csv");
 
     QDir m_markdown_dir = QDir("C:/mqa/mqa/content");

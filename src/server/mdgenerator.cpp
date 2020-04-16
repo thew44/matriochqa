@@ -45,6 +45,8 @@ void MdGenerator::rebuild_index_page()
             out << "[Stop](" << CmdServer::BuildCommand(m_config, inst->get_id(), srv_command_stop, m_config->m_markdown_emuroot) << ") - ";
             out << "[Start](" << CmdServer::BuildCommand(m_config, inst->get_id(), srv_command_start, m_config->m_markdown_emuroot) << ") - ";
             out << "[Restart](" << CmdServer::BuildCommand(m_config, inst->get_id(), srv_command_restart, m_config->m_markdown_emuroot) << ")";
+#else
+            out << "*Disabled*";
 #endif
             out << "|" << endl;
 
@@ -121,14 +123,31 @@ void MdGenerator::rebuild_instance_page(EmuInstance* i_instance)
 
         out << endl;
         out << "**Console:**"<< endl << endl;
-        out << QString("*(Last %1 lines displayed)*").arg(m_config->m_console_depth) << endl;
-        out << "```console" << endl;
-        for (auto line : i_instance->getConsole())
+        if(i_instance->getCurrentConfig().m_out_type == EmuConfig::vnc)
         {
-            out << line << endl;
+            out << QString("Display is redirected to VNC.") << endl;
+            out << QString("[Open instance display here.](vnc://%1:59%2)").arg(m_config->m_server_address).arg(QString().sprintf("%02d", i_instance->get_id())) << endl << endl;
+        }
+        else
+        {
+            out << QString("*(Last %1 lines displayed)*").arg(m_config->m_console_depth) << endl;
+            out << "```console" << endl;
+            for (auto line : i_instance->getConsole())
+            {
+                out << line << endl;
+            }
+            out << "```" << endl;
+        }
+
+        out << "**Logbook:**"<< endl << endl;
+        out << QString("Display of logs applying to the current instance only.") << endl;
+        out << QString("*(Last %1 lines displayed)*").arg(m_config->m_logbook_depth) << endl;
+        out << "```" << endl;
+        for (auto line : i_instance->getLogbook())
+        {
+            out << line.first.toString() << ": " << line.second << endl;
         }
         out << "```" << endl;
-
 
         out << "Generated at: " << QDateTime::currentDateTime().toString() << endl << endl;
 

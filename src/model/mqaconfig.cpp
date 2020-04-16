@@ -3,7 +3,7 @@
 
 MqaConfig::MqaConfig(const QString &i_filename)
 {
-    m_qemu_exec.insert("x86_64", "qemu-system-x86_64.exe");
+    //m_qemu_exec.insert("x86_64", "qemu-system-x86_64.exe");
     settings = QSharedPointer<QSettings>(new QSettings(i_filename, QSettings::Format::IniFormat));
 }
 
@@ -17,9 +17,10 @@ void MqaConfig::write()
 
     settings->beginGroup("qemu");
     settings->setValue("base_qemu_dir", m_base_qemu_dir.path());
-    for (auto k: m_qemu_exec.keys())
+    for (auto k: m_qemu_machines.keys())
     {
-        settings->setValue("exec/" + k, m_qemu_exec[k]);
+        settings->setValue("exec/" + k, m_qemu_machines[k].qemu_exec);
+        settings->setValue("machine/" + k, m_qemu_machines[k].qemu_machine);
     }
     settings->endGroup();
 
@@ -52,7 +53,19 @@ void MqaConfig::read()
     QStringList exec_keys = settings->childKeys();
     for (auto k: exec_keys)
     {
-        m_qemu_exec.insert(k, settings->value(k).toString());
+        machine_t m;
+        m.qemu_exec = settings->value(k).toString();
+        m_qemu_machines.insert(k, m);
+    }
+    settings->endGroup();
+    settings->beginGroup("machine");
+    QStringList machines_keys = settings->childKeys();
+    for (auto mt: machines_keys)
+    {
+        if (m_qemu_machines.contains(mt))
+        {
+            m_qemu_machines[mt].qemu_machine = settings->value(mt).toString();
+        }
     }
     settings->endGroup();
     settings->endGroup();
@@ -67,8 +80,8 @@ void MqaConfig::read()
     settings->endGroup();
 
     settings->beginGroup("command_server");
-    m_server_address = settings->value("address", "localhost").toString();
-    m_server_port = settings->value("port", 4455).toInt();
+    m_server_address = settings->value("address", "127.0.0.1").toString();
+    m_server_port = settings->value("port", 4450).toInt();
     settings->endGroup();
 }
 

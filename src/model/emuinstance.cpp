@@ -21,7 +21,7 @@ void EmuInstance::start()
 {
     //https://web.archive.org/web/20180104171638/http://nairobi-embedded.org/qemu_monitor_console.html
 
-    emuLog(QString("%1 Starting instance").arg(m_current_config.toLogTitle()));
+    emuLog(QString("Starting instance"));
     m_console.clear();
     m_console_currline.clear();
     // Get values needed to start - use friendliness
@@ -31,31 +31,48 @@ void EmuInstance::start()
     QString mem = m_current_config.m_mem;
 
     // Prepare execution string
-    QString exec_cmd = m_mqaconf->m_base_qemu_dir.canonicalPath() + QDir::separator() + m_mqaconf->m_qemu_exec["x86_64"];
+    QString exec_cmd = m_mqaconf->m_base_qemu_dir.canonicalPath() + QDir::separator() + m_current_config.m_machine.qemu_exec;
     QStringList exec_args;
     exec_args << "-L" << m_mqaconf->m_base_qemu_dir.canonicalPath();
+    if (!m_current_config.m_machine.qemu_machine.isEmpty())
+    {
+        exec_args << "-M" << m_current_config.m_machine.qemu_machine;
+    }
     if (!cdrom.isEmpty()) exec_args << "-cdrom" << cdrom;
     if (!hda.isEmpty()) exec_args << "-hda" << hda;
     if (!hdb.isEmpty()) exec_args << "-hdb" << hdb;
-    exec_args << "-nographic";
+
+    // Video
+    if (m_current_config.m_out_type == EmuConfig::vnc)
+    {
+        exec_args << "-vnc" << QString("%1:%2").arg(m_mqaconf->m_server_address).arg(get_id());
+    }
+    else
+    {
+        exec_args << "-nographic";
+    }
     exec_args << "-m" << mem;
+
+    // Add additional options
+    exec_args.append(m_current_config.m_options);
 
     if(m_process.state() != QProcess::NotRunning)
     {
-        throw MqaException(QString("Instance '%1' is already running").arg(m_current_config.toLogTitle()));
+        throw MqaException(QString("Instance is already running"));
     }
 
     m_process.setWorkingDirectory(m_mqaconf->m_base_vm_dir.canonicalPath());
     m_process.start(exec_cmd, exec_args);
+    emuLog(QString("Starting subprocess with arguments: %1").arg(exec_args.join(" ")));
     m_expected_status = st_running;
     m_process.waitForStarted();
     if (m_process.state() == QProcess::NotRunning)
     {
-        throw MqaException(QString("Instance '%1' has failed to start").arg(m_current_config.toLogTitle()));
+        throw MqaException(QString("Instance has failed to start"));
     }
     else
     {
-        emuLog(QString("%1 is running").arg(m_current_config.toLogTitle()));
+        emuLog(QString("Instance is up and running"));
     }
     emit changed(get_id());
 }
@@ -84,12 +101,12 @@ void EmuInstance::stop()
 {
     if (m_process.state() != QProcess::NotRunning)
     {
-        emuLog(QString("%1 Stopping instance").arg(m_current_config.toLogTitle()));
+        emuLog(QString("Stopping instance"));
         m_process.terminate();
         m_expected_status = st_stopped;
         QThread::sleep(2);
         m_process.kill();
-        emuLog(QString("%1 Instance stopped").arg(m_current_config.toLogTitle()));
+        emuLog(QString("Instance stopped"));
     }
 }
 
@@ -99,14 +116,14 @@ void EmuInstance::prepare(const EmuConfig &i_config)
     if (m_current_config != i_config)
     {
         m_next_config = i_config;
-        emuLog(QString("%1 Configuration has changed").arg(m_current_config.toLogTitle()));
+        emuLog(QString("Configuration has changed"));
     }
     else if (!m_next_config.is_empty() && i_config != m_next_config)
     {
         // The new config is equal to the one actually running, so
         // user just cancelled the pending conf by falling back to old conf.
         m_next_config.clear();
-        emuLog(QString("%1 Pending changes cancelled").arg(m_current_config.toLogTitle()));
+        emuLog(QString("Pending configuration changes cancelled"));
     }
 }
 
@@ -114,7 +131,7 @@ void EmuInstance::apply()
 {
     if (!m_next_config.is_empty())
     {
-        emuLog(QString("%1 Applying new configuration").arg(m_current_config.toLogTitle()));
+        emuLog(QString("Applying new configuration"));
         stop();
         m_current_config = m_next_config;
         m_next_config.clear();
@@ -170,7 +187,7 @@ QString EmuInstance::prepare_drive(const QString &i_source, bool i_copy)
         if (dest_nfo.exists())
         {
             // A file is already there, removing it
-            emuLog(QString("%1 Removing old image copy '%2'").arg(m_current_config.toLogTitle()).arg(dest_file));
+            emuLog(QString("Removing old image copy '%1'").arg(dest_file));
             bool success_rem = QFile(dest_file).remove();
             if (!success_rem)
             {                
@@ -179,7 +196,7 @@ QString EmuInstance::prepare_drive(const QString &i_source, bool i_copy)
         }
 
         // Now proceed with copy
-        emuLog(QString("%1 Copying '%2' to '%3'").arg(m_current_config.toLogTitle()).arg(i_source).arg(dest_file));
+        emuLog(QString("Copying '%1' to '%2'").arg(i_source).arg(dest_file));
         bool success_cpy = QFile(i_source).copy(dest_file);
         if (!success_cpy)
         {
@@ -228,5 +245,5 @@ void EmuInstance::emuLog(const QString &i_msg)
     emit changed(get_id());
 
     // Also log to general log file
-    mqaLog(QString("{%1} %2").arg(get_id()).arg(i_msg));
+    mqaLog(QString("%1 %2").arg(getCurrentConfig().toLogTitle()).arg(i_msg));
 }

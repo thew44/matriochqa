@@ -58,7 +58,7 @@ void Matriochqa::loadconfig()
     while (!eof)
     {
         EmuConfig conf;
-        eof = conf.deserialize(input_csv);
+        eof = conf.deserialize(input_csv, m_mqaconf);
         if (eof) break;
         // Verify that there isn't already another line with the same ID
         if (m_next_config.contains(conf.get_id()))
@@ -78,45 +78,6 @@ void Matriochqa::loadconfig()
         m_next_config.clear();
         throw MqaException(QString("Cannot open and read file %1: %2").arg(aCfgFile).arg(ex.what()));
     }
-    /*
-    // Parse configuration
-    QFile inputFile(aCfgFile);
-    bool title_passed = false;
-    if (inputFile.open(QIODevice::ReadOnly))
-    {
-       QTextStream in(&inputFile);
-       while (!in.atEnd())
-       {
-          if (!title_passed)
-          {
-              in.readLine();
-              title_passed = true;
-          }
-          else
-          {
-                EmuConfig conf;
-                conf.deserialize(in.readLine());
-                // Verify that there isn't already another line with the same ID
-                if (m_next_config.contains(conf.get_id()))
-                {
-                    throw MqaException(QString("Image with ID %1 defined twice").arg(conf.get_id()));
-                }
-
-                m_next_config.insert(conf.get_id(), conf);
-                mqaLog("Read virtual machine configuration: " + conf.toLogTitle());
-          }
-       }
-       inputFile.close();
-       // Do not forget to update hash - not completely bullet proof in case someone
-       // lock the file in between... but should work in most++ cases
-       m_vm_conf_hash = Hash::SHA1(aCfgFile);
-    }
-    else
-    {
-        m_next_config.clear();
-        throw MqaException(QString("Cannot open and read file " + aCfgFile));
-    }
-    */
 }
 
 void Matriochqa::prepare_all()
