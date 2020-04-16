@@ -1,5 +1,6 @@
 # matriochqa
 A csv &amp; markdown front end for QEMU
+![screenshot of matriochqa](mqacapture.png)
 
 ## Requirements
 - MS-Windows, for the moment - although it should work on Linux as well.
